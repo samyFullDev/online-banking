@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Banque d'investissement</title>
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --accent:#243b6b;
+    --accent-2:#7c3aed;
+    --muted:#6b7280;
+    --success:#059669;
+    --warn:#b45309;
+    --danger:#ef4444;
+    --wh:#25D366;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:var(--bg);color:#0f172a;-webkit-font-smoothing:antialiased}
+  .container{max-width:1100px;margin:22px auto;padding:14px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .logo{background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;font-weight:800;font-size:16px}
+  h2{margin:0;font-size:18px}
+  .small{font-size:13px;color:var(--muted)}
+  /* layout */
+  .layout{display:grid;grid-template-columns:280px 1fr;gap:16px;margin-top:18px;align-items:start}
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.06)}
+  .btn{background:var(--accent);color:#fff;padding:12px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:15px}
+  .btn.ghost{background:#fff;color:#111;border:1px solid #e6e9ef}
+  .tab{padding:8px 12px;border-radius:8px;border:1px solid #e6e9ef;margin-right:6px;cursor:pointer;background:#fff;font-weight:600}
+  .tab.active{background:var(--accent);color:#fff;border:none}
+  input,select,textarea{font-size:15px;padding:12px;border-radius:10px;border:1px solid #e6e9ef;width:100%;outline:none}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:10px;border-bottom:1px solid #f1f5f9;text-align:left}
+  .stat{padding:12px;border-radius:10px}
+  .muted{color:var(--muted)}
+  /* modal / overlay */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .modal{background:#fff;padding:18px;border-radius:12px;width:420px;max-width:96%;box-shadow:0 20px 60px rgba(2,6,23,0.12)}
+  .wh-btn{display:block;width:100%;padding:12px;border-radius:10px;border:none;margin-top:10px;font-weight:700;color:#fff;background:var(--wh);text-decoration:none;text-align:center}
+  .wh-btn.doctor{background:#0EA5A4}
+  .wh-btn.manager{background:#06B6D4}
+  /* lock overlay full white */
+  #lockOverlay{position:fixed;inset:0;background:#ffffff;z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:18px}
+  #lockBox{width:420px;max-width:96%;background:#fff;border-radius:12px;box-shadow:0 12px 36px rgba(2,6,23,0.12);padding:18px;text-align:center}
+  #lockBox h2{font-size:20px;margin:0}
+  #lockBox .hint{margin-top:8px;color:var(--muted);font-size:13px}
+  /* responsive adjustments for mobile */
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;gap:12px}
+    header{flex-direction:column;align-items:flex-start;gap:6px}
+    .logo{font-size:15px;padding:8px 12px}
+    .tab{padding:8px 10px;margin-bottom:8px}
+    .modal{padding:16px}
+    .btn{padding:14px;border-radius:12px;font-size:16px;width:100%}
+    .card{padding:12px}
+    #lockBox{padding:16px}
+  }
+  @media (max-width:420px){
+    .logo{padding:8px 10px;font-size:14px}
+    h2{font-size:16px}
+    .small{font-size:12px}
+    input,select,textarea{padding:10px;font-size:14px}
+  }
+</style>
+</head>
+<body>
+  <!-- LOCK OVERLAY: blanche tant que numéro non validé -->
+  <div id="lockOverlay" role="dialog" aria-modal="true">
+    <div id="lockBox">
+      <h2>Accès restreint</h2>
+      <p class="small" style="margin-top:8px">Entrez votre numéro (sans indicatif) pour accéder.</p>
+      <input id="lockPhone" placeholder="Ex : 874527685" aria-label="Numéro d'accès" />
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button class="btn" onclick="validateLock()">Valider</button>
+      </div>
+      <div class="hint" id="lockHint">Numéro requis pour continuer.</div>
+    </div>
+  </div>
+
+  <div class="container" id="mainContent" aria-hidden="true" style="opacity:1">
+    <header>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="logo">Banque d'investissement</div>
+        <div>
+          <h2>Portail Retrait </h2>
+          <div class="small">Online Banking</div>
+        </div>
+      </div>
+      <div id="userBadge" class="small">Non connecté</div>
+    </header>
+
+    <div class="layout" id="mainLayout">
+      <!-- LEFT / aside -->
+      <aside>
+        <div class="card" id="panelQuick">
+          <h3 style="margin:0 0 8px 0">Contrôles</h3>
+          <div class="small" id="accountOwnerLabel">Utilisateur : Mbungu </div>
+          <div style="height:10px"></div>
+          <button class="btn" onclick="openWithdrawModal()">Demander un retrait</button>
+          <div style="height:10px"></div>
+          <button class="btn ghost" onclick="gotoTab('invest')" style="width:100%;">Voir investissements</button>
+          <div style="height:12px"></div>
+          <div class="small">Statut du compte: <span id="activationStatus">Compte non activé</span></div>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="card">
+          <h4 style="margin:0 0 6px 0">Informations personnelles</h4>
+          <div class="small">Compte autorisé pour retrait :</div>
+          <div id="allowedAccountMasked" style="font-weight:700;margin-top:6px"></div>
+          <div style="height:8px"></div>
+          <div class="small">Nom:</div>
+          <div id="ownerName" style="font-weight:700"></div>
+          <div style="height:8px"></div>
+          <div class="small">Références bancaires</div>
+          <div id="ibanSwift" style="font-weight:600;margin-top:6px"></div>
+        </div>
+      </aside>
+
+      <!-- RIGHT / main -->
+      <main>
+        <div class="card" style="margin-bottom:12px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center">
+          <div>
+            <div class="small">Bienvenue</div>
+            <div id="welcomeName" style="font-weight:800">Mbungu</div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <button class="tab active" id="t_dashboard" onclick="gotoTab('dashboard')">Accueil</button>
+            <button class="tab" id="t_deposits" onclick="gotoTab('deposits')">Dépôts</button>
+            <button class="tab" id="t_withdrawals" onclick="gotoTab('withdrawals')">Retraits</button>
+            <button class="tab" id="t_invest" onclick="gotoTab('invest')">Investissements</button>
+            <button class="tab" id="t_stats" onclick="gotoTab('stats')">Statistiques</button>
+            <button class="tab" id="t_profile" onclick="gotoTab('profile')">Profil</button>
+          </div>
+        </div>
+
+        <div id="contentArea"></div>
+      </main>
+    </div>
+
+    <footer style="margin-top:14px" class="small"></footer>
+  </div>
+
+  <!-- Withdraw modal -->
+  <div id="withdrawModal" class="modal-bg" style="display:none;z-index:9000">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Retrait </h3>
+      <p class="small">Le retrait ne peut être effectué que vers le compte autorisé configuré.</p>
+      <div style="margin-top:10px">
+        <label class="small">Compte destinataire</label>
+        <input id="destAccount" readonly />
+      </div>
+      <div style="margin-top:10px">
+        <label class="small">Montant à retirer (USD)</label>
+        <input id="withdrawAmount" placeholder="Ex : 1000" />
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn ghost" onclick="closeWithdrawModal()">Annuler</button>
+        <button class="btn" onclick="attemptConfirmWithdraw()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activation modal (contact-only) -->
+  <div id="activationModal" class="modal-bg" style="display:none;z-index:9001">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Compte non activé</h3>
+      <p class="small">Pour terminer l'activation, contactez l'un des contacts ci-dessous. L'activation ne peut pas être effectuée depuis cette interface.</p>
+
+      <!-- <a id="waSupport" class="wh-btn" href="#" target="_blank" rel="noopener">Contacter l’assistance (WhatsApp)</a>
+      <a id="waDoctor" class="wh-btn doctor" href="#" target="_blank" rel="noopener">Contacter le docteur (WhatsApp)</a> -->
+      <a id="waManager" class="wh-btn manager" href="#" target="_blank" rel="noopener">Contacter votre gestionnaire financier (WhatsApp)</a>
+
+      <div style="height:12px"></div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn ghost" onclick="closeActivationModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ========== CONFIG (local use only) ========== */
+const REQUIRED_PHONE = '898610852'; // numéro obligatoire exact
+const WHATSAPP_NUMBER = '+447577326419';
+
+const ALLOWED_ACCOUNT = '0003006807';
+const OTHER_CODE = '92';
+const IBAN = '70220001021';
+const SWIFT = 'UNAFCDKS';
+
+const OWNER = { lastname:'Mbungu', postname:'Nguma', firstname:'Joseph', birth:'1972-03-01', phone:'+243 898 610 852' };
+const INVESTMENT_STATS = { investedUSD:9800, expectedUSD:48000, gainsUSD:48000-9800, timeline:[12000,15000,21000,32000,38000,42000,48000] };
+
+/* activation state mock */
+let ACCOUNT_ACTIVATED = false;
+let pendingWithdrawal = null;
+
+/* helpers */
+function mask(s){ if(!s) return '—'; s=String(s); return '****' + s.slice(-4); }
+function formatUSD(n){ return '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits:0}); }
+
+/* LOCK logic */
+function validateLock(){
+  const v = (document.getElementById('lockPhone').value || '').trim();
+  const hint = document.getElementById('lockHint');
+  if(!v){
+    hint.innerText = 'Veuillez entrer votre numéro de téléphone.';
+    hint.style.color = '#b45309';
+    return;
+  }
+  if(v === REQUIRED_PHONE){
+    // unlock site
+    document.getElementById('lockOverlay').style.display = 'none';
+    document.getElementById('mainContent').setAttribute('aria-hidden','false');
+    document.getElementById('userBadge').innerText = v;
+    document.getElementById('ownerName').innerText = OWNER.firstname + ' ' + OWNER.postname + ' ' + OWNER.lastname;
+    document.getElementById('allowedAccountMasked').innerText = mask(ALLOWED_ACCOUNT);
+    document.getElementById('ibanSwift').innerText = `${OTHER_ACCOUNT_REF} • ${OTHER_CODE} • IBAN:${IBAN} • SWIFT:${SWIFT}`;
+    document.getElementById('welcomeName').innerText = OWNER.firstname + ' ' + OWNER.postname;
+    updateActivationLabel();
+    populateWhatsAppLinks();
+    gotoTab('dashboard');
+    // optional: focus first interactive element on mobile
+    window.scrollTo({top:0,behavior:'smooth'});
+  } else {
+    hint.innerText = 'Numéro incorrect — accès refusé.';
+    hint.style.color = '#ef4444';
+  }
+}
+
+/* WhatsApp links */
+function populateWhatsAppLinks(){
+  const base = 'https://wa.me/' + WHATSAPP_NUMBER.replace(/\D/g,'');
+  // document.getElementById('waSupport').href = base + '?text=' + encodeURIComponent('Bonjour, je souhaite activer mon compte pour finaliser un retrait.');
+  // document.getElementById('waDoctor').href = base + '?text=' + encodeURIComponent('Bonjour Docteur, je souhaite activer mon compte pour finaliser un retrait.');
+  document.getElementById('waManager').href = base + '?text=' + encodeURIComponent('Bonjour gestionnaire, je souhaite activer mon compte et finaliser un retrait.');
+}
+
+/* update activation label */
+function updateActivationLabel(){
+  const el = document.getElementById('activationStatus');
+  el.innerText = ACCOUNT_ACTIVATED ? 'Compte non activé' : 'Compte non activé';
+  el.style.color = ACCOUNT_ACTIVATED ? '#059669' : '#b45309';
+}
+
+/* tabs */
+function gotoTab(tab){
+  ['dashboard','deposits','withdrawals','invest','stats','profile'].forEach(t=>{
+    const el = document.getElementById('t_' + t);
+    if(el) el.className = 'tab' + (t===tab ? ' active' : '');
+  });
+  renderTab(tab);
+}
+
+/* render views */
+function renderTab(tab){
+  const area = document.getElementById('contentArea');
+  if(tab === 'dashboard'){
+    area.innerHTML = `
+      <div class="card">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center">
+          <div>
+            <div class="small">Capital investi</div>
+            <div style="font-weight:800;font-size:20px">${formatUSD(INVESTMENT_STATS.investedUSD)}</div>
+          </div>
+          <div>
+            <div class="small">Retour estimé</div>
+            <div style="font-weight:800;font-size:20px">${formatUSD(INVESTMENT_STATS.expectedUSD)}</div>
+          </div>
+          <div>
+            <div class="small">Gains nets</div>
+            <div style="font-weight:800;font-size:20px">${formatUSD(INVESTMENT_STATS.gainsUSD)}</div>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="small">Progrès vers objectif</div>
+        <div style="height:10px;background:#eef2ff;border-radius:8px;margin-top:6px;overflow:hidden">
+          <div style="height:10px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:${Math.min(100, Math.round((INVESTMENT_STATS.gainsUSD / INVESTMENT_STATS.expectedUSD)*100))}%"></div>
+        </div>
+        <div style="margin-top:10px" id="miniChartArea"></div>
+        <div style="margin-top:10px" class="small">Statut du compte: <strong id="miniActivation">${ACCOUNT_ACTIVATED ? 'Compte activé' : 'Compte non activé'}</strong></div>
+      </div>
+
+      <div style="height:12px"></div>
+      <div class="card">
+        <h4 style="margin:0 0 8px 0">Historique</h4>
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Montant</th><th>Statut</th></tr></thead>
+          <tbody id="historyTable">
+            <tr><td>2025-11-28</td><td>Investissement</td><td>${formatUSD(INVESTMENT_STATS.investedUSD)}</td><td>Confirmé</td></tr>
+            <tr><td>2025-11-30</td><td>Bénéfice</td><td>${formatUSD(12000)}</td><td>Payout</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+    renderSparkline('miniChartArea', INVESTMENT_STATS.timeline);
+  }
+  else if(tab === 'deposits'){
+    area.innerHTML = `<div class="card"><h4>Dépôts</h4><p class="small">Prototype: dépôts via canaux officiels. Intégrer API en prod.</p></div>`;
+  }
+  else if(tab === 'withdrawals'){
+    area.innerHTML = `<div class="card"><h4>Retraits</h4><p class="small">Les retraits se font uniquement vers le compte autorisé.</p>
+      <div style="height:8px"></div>
+      <div><strong>Compte autorisé:</strong> <span id="inlineAccount">${mask(ALLOWED_ACCOUNT)}</span></div>
+      <div style="height:12px"></div>
+      <button class="btn" onclick="openWithdrawModal()">Demander retrait</button>
+    </div>`;
+  }
+  else if(tab === 'invest'){
+    area.innerHTML = `<div class="card"><h4>Investissements</h4><p class="small">Performance & plans</p>
+      <table style="margin-top:8px"><thead><tr><th>Plan</th><th>Investi</th><th>Retour estimé</th><th>Durée</th></tr></thead>
+      <tbody><tr><td>Plan Pro</td><td>${formatUSD(INVESTMENT_STATS.investedUSD)}</td><td>${formatUSD(INVESTMENT_STATS.expectedUSD)}</td><td>3 mois</td></tr></tbody></table></div>`;
+  }
+  else if(tab === 'stats'){
+    area.innerHTML = `<div class="card"><h4>Statistiques</h4><p class="small">Synthèse plateforme (mock)</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap"><div class="stat card"><div class="small">Volume</div><div style="font-weight:800">$1,240,000</div></div><div class="stat card"><div class="small">Taux réussite</div><div style="font-weight:800">98%</div></div></div></div>`;
+  }
+  else if(tab === 'profile'){
+    area.innerHTML = `<div class="card"><h4>Profil</h4>
+      <div class="small">Nom</div><div style="font-weight:800">${OWNER.firstname} ${OWNER.postname} ${OWNER.lastname}</div>
+      <div style="height:8px"></div><div class="small">Né le</div><div>${OWNER.birth}</div>
+      <div style="height:8px"></div><div class="small">Téléphone</div><div>${OWNER.phone}</div>
+    </div>`;
+  }
+}
+
+/* withdraw modal logic */
+function openWithdrawModal(){
+  document.getElementById('destAccount').value = ALLOWED_ACCOUNT;
+  document.getElementById('withdrawAmount').value = INVESTMENT_STATS.expectedUSD;
+  document.getElementById('withdrawModal').style.display = 'flex';
+}
+function closeWithdrawModal(){ document.getElementById('withdrawModal').style.display = 'none'; }
+
+/* confirm withdraw -> activation check */
+function attemptConfirmWithdraw(){
+  const amt = document.getElementById('withdrawAmount').value.trim();
+  if(!amt || isNaN(Number(amt))){ alert('Montant invalide'); return; }
+  pendingWithdrawal = { amount: Number(amt), destination: ALLOWED_ACCOUNT };
+  if(!ACCOUNT_ACTIVATED){
+    document.getElementById('activationModal').style.display = 'flex';
+  } else {
+    finalizeWithdrawal(pendingWithdrawal);
+  }
+}
+
+/* close activation modal */
+function closeActivationModal(){ document.getElementById('activationModal').style.display = 'none'; pendingWithdrawal = null; }
+
+/* finalize (mock) */
+function finalizeWithdrawal(req){
+  closeWithdrawModal();
+  alert('Retrait soumis (mock) vers ' + mask(req.destination) + ' pour ' + formatUSD(req.amount) + '. Le back-office doit valider.');
+  pendingWithdrawal = null;
+}
+
+/* sparkline small */
+function renderSparkline(targetId, data){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  const width = el.clientWidth || 360;
+  const height = 56;
+  const max = Math.max(...data), min = Math.min(...data);
+  const step = width/(data.length-1);
+  const points = data.map((d,i)=> `${i*step},${height - ((d-min)/(max-min||1))*height}` ).join(' ');
+  el.innerHTML = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><polyline fill="none" stroke="#243b6b" stroke-width="2" points="${points}" /></svg>`;
+}
+
+/* init */
+function mask(s){ if(!s) return '—'; s=String(s); return '****' + s.slice(-4); }
+gotoTab('dashboard');
+
+/* lock: allow enter key */
+document.getElementById('lockPhone').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') validateLock();
+});
+
+/* populate whatsapp & owner details after unlock */
+function populateWhatsAppLinks(){
+  const base = 'https://wa.me/' + WHATSAPP_NUMBER.replace(/\D/g,'');
+  document.getElementById('waSupport').href = base + '?text=' + encodeURIComponent('Bonjour, je souhaite activer mon compte pour finaliser un retrait.');
+  document.getElementById('waDoctor').href = base + '?text=' + encodeURIComponent('Bonjour Docteur, je souhaite activer mon compte pour finaliser un retrait.');
+  document.getElementById('waManager').href = base + '?text=' + encodeURIComponent('Bonjour gestionnaire, je souhaite activer mon compte et finaliser un retrait.');
+  updateActivationLabel();
+}
+
+/* update activation label */
+function updateActivationLabel(){
+  const el = document.getElementById('activationStatus');
+  el.innerText = ACCOUNT_ACTIVATED ? 'Compte activé' : 'Compte non activé';
+  el.style.color = ACCOUNT_ACTIVATED ? '#059669' : '#b45309';
+}
+
+/* finalize setup on unlock */
+function setupAfterUnlock(entered){
+  document.getElementById('userBadge').innerText = entered;
+  document.getElementById('ownerName').innerText = OWNER.firstname + ' ' + OWNER.postname + ' ' + OWNER.lastname;
+  document.getElementById('allowedAccountMasked').innerText = mask(ALLOWED_ACCOUNT);
+  document.getElementById('ibanSwift').innerText = `${OTHER_ACCOUNT_REF} • ${OTHER_CODE} • IBAN:${IBAN} • SWIFT:${SWIFT}`;
+  document.getElementById('welcomeName').innerText = OWNER.firstname + ' ' + OWNER.postname;
+  populateWhatsAppLinks();
+  updateActivationLabel();
+  gotoTab('dashboard');
+}
+
+/* validateLock defined separately for clarity */
+function validateLock(){
+  const v = (document.getElementById('lockPhone').value || '').trim();
+  const hint = document.getElementById('lockHint');
+  if(!v){ hint.innerText = 'Veuillez entrer votre numéro.'; hint.style.color = '#b45309'; return; }
+  if(v === REQUIRED_PHONE){
+    document.getElementById('lockOverlay').style.display = 'none';
+    document.getElementById('mainContent').setAttribute('aria-hidden','false');
+    setupAfterUnlock(v);
+    window.scrollTo({top:0,behavior:'smooth'});
+  } else {
+    hint.innerText = 'Numéro incorrect — accès refusé.';
+    hint.style.color = '#ef4444';
+  }
+}
+
+/* ensure sparkline redraw on resize for responsiveness */
+window.addEventListener('resize', ()=>{ try{ renderSparkline('miniChartArea', INVESTMENT_STATS.timeline); }catch(e){} });
+
+</script>
+</body>
+</html>
