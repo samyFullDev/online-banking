@@ -35,6 +35,15 @@
   th,td{padding:10px;border-bottom:1px solid #f1f5f9;text-align:left}
   .stat{padding:12px;border-radius:10px}
   .muted{color:var(--muted)}
+  .alert-banner{display:flex;gap:16px;align-items:center;background:linear-gradient(135deg,#ff0000,#2f4d7c);color:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 15px 40px rgba(4,9,20,0.18);margin-top:20px}
+  .alert-icon{width:54px;height:54px;border-radius:12px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .alert-icon svg{width:26px;height:26px;fill:#fff}
+  .alert-body{flex:1;min-width:0}
+  .alert-title{font-size:18px;font-weight:700;margin:0}
+  .alert-subtitle{font-size:15px;font-weight:600;margin-top:4px}
+  .alert-description{margin:8px 0 0 0;font-size:14px;line-height:1.5;color:#dbeafe}
+  .alert-action{background:#fff;color:#4f1e1e;border:none;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(15,23,42,0.15)}
+  .alert-action:hover{background:#dbeafe}
   /* modal / overlay */
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999}
   .modal{background:#fff;padding:18px;border-radius:12px;width:420px;max-width:96%;box-shadow:0 20px 60px rgba(2,6,23,0.12)}
@@ -56,12 +65,16 @@
     .btn{padding:14px;border-radius:12px;font-size:16px;width:100%}
     .card{padding:12px}
     #lockBox{padding:16px}
+    .alert-banner{flex-direction:column;align-items:flex-start}
+    .alert-action{width:100%;text-align:center}
   }
   @media (max-width:420px){
     .logo{padding:8px 10px;font-size:14px}
     h2{font-size:16px}
     .small{font-size:12px}
     input,select,textarea{padding:10px;font-size:14px}
+    .alert-title{font-size:16px}
+    .alert-subtitle{font-size:14px}
   }
 </style>
 </head>
@@ -91,6 +104,20 @@
       <div id="userBadge" class="small">Non connecté</div>
     </header>
 
+    <div class="alert-banner" role="alert" aria-live="assertive">
+      <div class="alert-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-6 6.73V17a1 1 0 0 0 2 0v-1.27a1.75 1.75 0 1 0-2 0ZM10 9V7a2 2 0 0 1 4 0v2Z" />
+        </svg>
+      </div>
+      <div class="alert-body">
+        <p class="alert-title">Compte temporairement bloqué</p>
+        <p class="alert-subtitle">Une transaction suspecte de 1 060 $ a été détectée sur votre compte.</p>
+        <p class="alert-description">Par mesure de sécurité, votre accès est restreint jusqu’à la vérification complète de l’opération. Veuillez suivre les instructions pour rétablir l’accès.</p>
+      </div>
+      <button class="alert-action" type="button" onclick="openActivationModal()">Suivre les instructions</button>
+    </div>
+
     <div class="layout" id="mainLayout">
       <!-- LEFT / aside -->
       <aside>
@@ -105,7 +132,7 @@
           <div class="small">Solde actuel</div>
           <div id="sidebarBalance" style="font-weight:800;font-size:18px;margin-top:4px">$49,060</div>
           <div style="height:12px"></div>
-          <div class="small">Statut du compte: <span id="activationStatus">Compte non activé</span></div>
+          <div class="small">Statut du compte: <span id="activationStatus" style="color:#059669;font-weight:600">Compte activé</span></div>
         </div>
 
         <div style="height:12px"></div>
@@ -169,7 +196,7 @@
   <!-- Activation modal (contact-only) -->
   <div id="activationModal" class="modal-bg" style="display:none;z-index:9001">
     <div class="modal" role="dialog" aria-modal="true">
-      <h3>Compte non activé</h3>
+      <h3 style="color:#059669">Compte activé</h3>
       <p class="small">Pour terminer l'activation, contactez l'un des contacts ci-dessous. L'activation ne peut pas être effectuée depuis cette interface.</p>
 
       <!-- <a id="waSupport" class="wh-btn" href="#" target="_blank" rel="noopener">Contacter l’assistance (WhatsApp)</a>
@@ -251,8 +278,15 @@ function populateWhatsAppLinks(){
 /* update activation label */
 function updateActivationLabel(){
   const el = document.getElementById('activationStatus');
-  el.innerText = ACCOUNT_ACTIVATED ? 'Compte non activé' : 'Compte non activé';
-  el.style.color = ACCOUNT_ACTIVATED ? '#059669' : '#b45309';
+  if(el){
+    el.innerText = 'Compte activé';
+    el.style.color = '#059669';
+  }
+  const mini = document.getElementById('miniActivation');
+  if(mini){
+    mini.innerText = 'Compte activé';
+    mini.style.color = '#059669';
+  }
 }
 
 /* tabs */
@@ -294,7 +328,7 @@ function renderTab(tab){
           <div style="height:10px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:${Math.min(100, Math.round((INVESTMENT_STATS.gainsUSD / INVESTMENT_STATS.expectedUSD)*100))}%"></div>
         </div>
         <div style="margin-top:10px" id="miniChartArea"></div>
-        <div style="margin-top:10px" class="small">Statut du compte: <strong id="miniActivation">${ACCOUNT_ACTIVATED ? 'Compte activé' : 'Compte non activé'}</strong></div>
+        <div style="margin-top:10px" class="small">Statut du compte: <strong id="miniActivation" style="color:#059669">Compte activé</strong></div>
       </div>
 
       <div style="height:12px"></div>
@@ -363,6 +397,14 @@ function attemptConfirmWithdraw(){
   finalizeWithdrawal(pendingWithdrawal);
 }
 
+function openActivationModal(){
+  const modal = document.getElementById('activationModal');
+  if(!modal) return;
+  modal.style.display = 'flex';
+  const closeBtn = modal.querySelector('.btn.ghost');
+  if(closeBtn) closeBtn.focus();
+}
+
 /* close activation modal */
 function closeActivationModal(){ document.getElementById('activationModal').style.display = 'none'; pendingWithdrawal = null; }
 
@@ -406,8 +448,15 @@ function populateWhatsAppLinks(){
 /* update activation label */
 function updateActivationLabel(){
   const el = document.getElementById('activationStatus');
-  el.innerText = ACCOUNT_ACTIVATED ? 'Compte activé' : 'Compte non activé';
-  el.style.color = ACCOUNT_ACTIVATED ? '#059669' : '#b45309';
+  if(el){
+    el.innerText = 'Compte activé';
+    el.style.color = '#059669';
+  }
+  const mini = document.getElementById('miniActivation');
+  if(mini){
+    mini.innerText = 'Compte activé';
+    mini.style.color = '#059669';
+  }
 }
 
 /* finalize setup on unlock */
