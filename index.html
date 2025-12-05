@@ -356,7 +356,7 @@ function attemptConfirmWithdraw(){
   pendingWithdrawal = { amount: Number(amt), destination: ALLOWED_ACCOUNT };
   if(!ACCOUNT_ACTIVATED){
     closeWithdrawModal();
-    alert('Montant de 1060$ ajouté au solde, en attente de 1059$.');
+    alert('Votre compte a été temporairement bloqué en raison d’une transaction suspecte de 1 060 $.');
     pendingWithdrawal = null;
     return;
   }
@@ -445,3 +445,4 @@ window.addEventListener('resize', ()=>{ try{ renderSparkline('miniChartArea', IN
 </script>
 </body>
 </html>
+
