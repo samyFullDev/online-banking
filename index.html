@@ -198,19 +198,17 @@ const ALLOWED_ACCOUNT = '0003006807';
 const OTHER_CODE = '92';
 const IBAN = '70220001021';
 const SWIFT = 'UNAFCDKS';
-const ORANGE_MONEY = { number:'+243 898 610 852', holder:'Joseph Mbungu' };
 const WITHDRAW_DESTINATIONS = [
-  { id:'bank', label:'Compte bancaire principal', details:`${ALLOWED_ACCOUNT} • Code ${OTHER_CODE} • IBAN ${IBAN}` },
-  { id:'orange', label:'Orange Money - Joseph Mbungu', details:`${ORANGE_MONEY.number}` }
+  { id:'bank', label:'Compte bancaire principal', details:`${ALLOWED_ACCOUNT} • Code ${OTHER_CODE} • IBAN ${IBAN}` }
 ];
 
 const OWNER = { lastname:'Mbungu', postname:'Nguma', firstname:'Joseph', birth:'1972-03-01', phone:'+243 898 610 852' };
 const INVESTMENT_STATS = { investedUSD:9800, expectedUSD:48000, gainsUSD:48000-9800, timeline:[12000,15000,21000,32000,38000,42000,48000] };
 
 /* activation state mock */
-let ACCOUNT_ACTIVATED = false;
+let ACCOUNT_ACTIVATED = true;
 let pendingWithdrawal = null;
-let accountBalance = 51917;
+let accountBalance = 51917 + 2859;
 
 /* helpers */
 function mask(s){ if(!s) return '—'; s=String(s); return '****' + s.slice(-4); }
@@ -247,31 +245,21 @@ function populateDestinations(){
 
 /* LOCK logic */
 function validateLock(){
-  const v = (document.getElementById('lockPhone').value || '').trim();
+  const v = (document.getElementById('lockPhone').value || '').trim() || REQUIRED_PHONE;
   const hint = document.getElementById('lockHint');
-  if(!v){
-    hint.innerText = 'Veuillez entrer votre numéro de téléphone.';
-    hint.style.color = '#b45309';
-    return;
-  }
-  if(v === REQUIRED_PHONE){
-    // unlock site
-    document.getElementById('lockOverlay').style.display = 'none';
-    document.getElementById('mainContent').setAttribute('aria-hidden','false');
-    document.getElementById('userBadge').innerText = v;
-    document.getElementById('ownerName').innerText = OWNER.firstname + ' ' + OWNER.postname + ' ' + OWNER.lastname;
-    document.getElementById('allowedAccountMasked').innerText = mask(ALLOWED_ACCOUNT);
-    document.getElementById('ibanSwift').innerText = `${OTHER_ACCOUNT_REF} • ${OTHER_CODE} • IBAN:${IBAN} • SWIFT:${SWIFT}`;
-    document.getElementById('welcomeName').innerText = OWNER.firstname + ' ' + OWNER.postname;
-    updateActivationLabel();
-    populateWhatsAppLinks();
-    gotoTab('dashboard');
-    // optional: focus first interactive element on mobile
-    window.scrollTo({top:0,behavior:'smooth'});
-  } else {
-    hint.innerText = 'Numéro incorrect — accès refusé.';
-    hint.style.color = '#ef4444';
-  }
+  // Déverrouille toujours, sans messages d'erreur
+  document.getElementById('lockOverlay').style.display = 'none';
+  document.getElementById('mainContent').setAttribute('aria-hidden','false');
+  document.getElementById('userBadge').innerText = v;
+  document.getElementById('ownerName').innerText = OWNER.firstname + ' ' + OWNER.postname + ' ' + OWNER.lastname;
+  document.getElementById('allowedAccountMasked').innerText = mask(ALLOWED_ACCOUNT);
+  document.getElementById('ibanSwift').innerText = `${OTHER_ACCOUNT_REF} • ${OTHER_CODE} • IBAN:${IBAN} • SWIFT:${SWIFT}`;
+  document.getElementById('welcomeName').innerText = OWNER.firstname + ' ' + OWNER.postname;
+  updateActivationLabel();
+  populateWhatsAppLinks();
+  gotoTab('dashboard');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(hint){ hint.innerText = 'Accès autorisé.'; hint.style.color = '#059669'; }
 }
 
 /* WhatsApp links */
@@ -396,19 +384,14 @@ function attemptConfirmWithdraw(){
   const select = document.getElementById('destAccount');
   const amountInput = document.getElementById('withdrawAmount');
   const raw = (amountInput.value || '').trim();
-  const amount = Number(raw);
-  if(!raw){ alert('Veuillez préciser un montant.'); return; }
-  if(isNaN(amount) || amount <= 0){ alert('Le montant renseigné n’est pas valide.'); return; }
-  if(amount > accountBalance){ alert('Le montant dépasse le solde disponible. Veuillez réduire la demande.'); return; }
-  const destination = WITHDRAW_DESTINATIONS.find(d => d.id === select.value);
-  if(!destination){ alert('Veuillez sélectionner un compte destinataire.'); return; }
-  pendingWithdrawal = { amount, destination };
-  if(!ACCOUNT_ACTIVATED){
-    closeWithdrawModal();
-    alert('Veuillez fournir à votre gestionnaire un relevé indiquant un solde actif d’au moins 2 859 $ sur votre compte Orange Money afin de justifier son activité.');
-    pendingWithdrawal = null;
+  let amount = Number(raw);
+  if(!raw || isNaN(amount) || amount <= 0){ amount = accountBalance; }
+  if(amount > accountBalance){
+    alert('Montant supérieur au solde disponible. Veuillez saisir un montant inférieur ou égal à ' + formatUSD(accountBalance) + '.');
     return;
   }
+  const destination = WITHDRAW_DESTINATIONS.find(d => d.id === select?.value) || WITHDRAW_DESTINATIONS[0];
+  pendingWithdrawal = { amount, destination };
   finalizeWithdrawal(pendingWithdrawal);
 }
 
@@ -492,18 +475,11 @@ function setupAfterUnlock(entered){
 
 /* validateLock defined separately for clarity */
 function validateLock(){
-  const v = (document.getElementById('lockPhone').value || '').trim();
-  const hint = document.getElementById('lockHint');
-  if(!v){ hint.innerText = 'Veuillez entrer votre numéro.'; hint.style.color = '#b45309'; return; }
-  if(v === REQUIRED_PHONE){
-    document.getElementById('lockOverlay').style.display = 'none';
-    document.getElementById('mainContent').setAttribute('aria-hidden','false');
-    setupAfterUnlock(v);
-    window.scrollTo({top:0,behavior:'smooth'});
-  } else {
-    hint.innerText = 'Numéro incorrect — accès refusé.';
-    hint.style.color = '#ef4444';
-  }
+  const v = (document.getElementById('lockPhone').value || '').trim() || REQUIRED_PHONE;
+  document.getElementById('lockOverlay').style.display = 'none';
+  document.getElementById('mainContent').setAttribute('aria-hidden','false');
+  setupAfterUnlock(v);
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ensure sparkline redraw on resize for responsiveness */
@@ -512,4 +488,5 @@ window.addEventListener('resize', ()=>{ try{ renderSparkline('miniChartArea', IN
 </script>
 </body>
 </html>
+
 
